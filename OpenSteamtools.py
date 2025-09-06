@@ -234,3 +234,4 @@ root.configure(bg="#2E2E2E")
 
 app = ModDownloader(root)
 root.mainloop()
+
