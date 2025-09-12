@@ -3,6 +3,7 @@ import shutil
 import requests
 import zipfile
 import datetime
+import math
 from bs4 import BeautifulSoup
 from urllib.parse import quote_plus
 from selenium import webdriver
@@ -208,178 +209,95 @@ class ModDownloader:
     # ----------------- File Mover -----------------
     def workshop_file_mover(self):
         self.add_return_arrow()
-        tb.Label(self.root, text="Workshop File Mover", font=("Segoe UI", 20, "bold")).pack(pady=20)
-        tb.Label(self.root, text="Drag and drop files here:").pack(pady=10)
-        self.root.drop_target_register(DND_FILES)
-        self.root.dnd_bind("<<Drop>>", self.drop)
-
-    def drop(self, event):
-        for file in event.data.split():
-            target_dir = None
-            if file.endswith('.manifest'):
-                target_dir = self.MANIFEST_DIR
-            elif file.endswith('.lua'):
-                target_dir = self.LUA_ST_DIR
-            if target_dir:
-                try:
-                    shutil.move(file, target_dir)
-                    self._log(f"Moved {file} → {target_dir}")
-                except Exception as e:
-                    self._log(f"Error moving {file}: {e}")
+        tb.Label(self.root, text="Move Lua & Manifest Files", font=("Segoe UI", 20, "bold")).pack(pady=20)
 
     # ----------------- Uninstaller -----------------
     def uninstaller(self):
         self.add_return_arrow()
-        tb.Label(self.root, text="Uninstaller", font=("Segoe UI", 20, "bold")).pack(pady=20)
-
-        # Game count
-        self.game_count_label = tb.Label(self.root, text="Scanning...", font=("Segoe UI", 12))
-        self.game_count_label.pack(pady=5)
-
-        # Dropdown
-        tb.Label(self.root, text="Select App ID:").pack(pady=5)
-        self.appid_var = tk.StringVar()
-        self.appid_combo = tb.Combobox(self.root, textvariable=self.appid_var, state="readonly", width=25)
-        self.appid_combo.pack(pady=5)
-
-        tb.Button(self.root, text="Uninstall Selected",
-                  bootstyle="danger outline", width=20,
-                  command=self.on_uninstall).pack(pady=10, ipadx=10, ipady=8)
-
-        # Search box
-        tb.Label(self.root, text="Search App ID:").pack(pady=5)
-        self.search_var = tk.StringVar()
-        self.search_entry = tb.Entry(self.root, textvariable=self.search_var, width=25)
-        self.search_entry.pack(pady=5)
-
-        tb.Button(self.root, text="Search",
-                  bootstyle="info outline", width=20,
-                  command=self.on_search_uninstall).pack(pady=10, ipadx=10, ipady=8)
-
-        self.search_listbox = tk.Listbox(
-            self.root, width=40, height=8,
-            bg="#2b2b2b", fg="white",
-            selectbackground="#dc3545", selectforeground="white",
-            highlightbackground="#444"
-        )
-        self.search_listbox.pack(pady=5)
-
-        tb.Button(self.root, text="Uninstall From Search",
-                  bootstyle="danger outline", width=20,
-                  command=self.on_search_uninstall_delete).pack(pady=10, ipadx=10, ipady=8)
-
-        self.populate_appids()
-
-    def populate_appids(self):
-        try:
-            appids = []
-            for file in os.listdir(self.LUA_ST_DIR):
-                if file.endswith(".lua"):
-                    appid = file[:-4]
-                    if appid.isdigit():
-                        appids.append(int(appid))
-                    else:
-                        appids.append(appid)
-            appids = sorted(appids, key=lambda x: (isinstance(x, str), x))
-            appids_str = [str(a) for a in appids]
-            self.appid_combo["values"] = appids_str
-            if appids_str:
-                self.appid_combo.current(0)
-            self.game_count_label.config(text=f"{len(appids_str)} games installed")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to scan App IDs: {e}")
-
-    def on_uninstall(self):
-        appid = self.appid_var.get()
-        if not appid:
-            messagebox.showwarning("Warning", "No App ID selected")
-            return
-        self._uninstall_by_appid(appid)
-
-    def on_search_uninstall(self):
-        query = self.search_var.get().strip()
-        self.search_listbox.delete(0, "end")
-        if not query:
-            return
-        results = []
-        try:
-            for file in os.listdir(self.LUA_ST_DIR):
-                if file.endswith(".lua"):
-                    aid = file[:-4]
-                    if query in aid:
-                        results.append(aid)
-            results = sorted(results, key=lambda x: int(x) if x.isdigit() else x)
-            for appid in results:
-                self.search_listbox.insert("end", appid)
-        except Exception as e:
-            messagebox.showerror("Error", f"Search failed: {e}")
-
-    def on_search_uninstall_delete(self):
-        sel = self.search_listbox.curselection()
-        if not sel:
-            messagebox.showwarning("Warning", "No App ID selected from search results")
-            return
-        appid = self.search_listbox.get(sel[0])
-        self._uninstall_by_appid(appid)
-
-    def _uninstall_by_appid(self, appid):
-        filename = f"{appid}.lua"
-        filepath = os.path.join(self.LUA_ST_DIR, filename)
-        if not os.path.exists(filepath):
-            messagebox.showerror("Error", f"{filename} not found")
-            return
-        try:
-            os.remove(filepath)
-            self._log(f"🗑️ Uninstalled {filename} from {self.LUA_ST_DIR}")
-            messagebox.showinfo("Success", f"Uninstalled {filename}")
-            self.populate_appids()
-            self.on_search_uninstall()
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to uninstall {filename}: {e}")
+        tb.Label(self.root, text="Uninstall Mods", font=("Segoe UI", 20, "bold")).pack(pady=20)
 
     # ----------------- Credits -----------------
     def credits_screen(self):
         self.add_return_arrow()
-        self.credits_label = tb.Label(self.root, text="Meng (This took a LONG time)",
-                                      font=("Segoe UI", 20, "bold"))
-        self.credits_label.place(relx=0.5, rely=0.5, anchor="center")
 
-        self.current_rgb = (255, 0, 0)
-        self.target_rgb = (255, 127, 0)
-        self.color_index = 1
-        self.fade_step = 0
+        # Main credits labels with rainbow effect
+        self.credits_label1 = tb.Label(self.root, text="Meng (This took a LONG time)", font=("Segoe UI", 20, "bold"))
+        self.credits_label1.place(relx=0.5, rely=0.2, anchor="center")
+
+        self.credits_label2 = tb.Label(self.root, text="Spade for testing",
+                                       font=("Segoe UI", 14))
+        self.credits_label2.place(relx=0.5, rely=0.4, anchor="center")
+
+        self.credits_label3 = tb.Label(self.root, text="Soldy for also testing",
+                                       font=("Segoe UI", 14))
+        self.credits_label3.place(relx=0.5, rely=0.6, anchor="center")
+
+        # Rainbow palette
+        self.rainbow_colors = [
+            (255, 0, 0), (255, 127, 0), (255, 255, 0),
+            (0, 255, 0), (0, 0, 255), (75, 0, 130), (148, 0, 211)
+        ]
+
+        # Animation states
+        self.fade_step = [0, 5, 10]      # staggered starts
+        self.color_index = [0, 2, 4]     # each label starts at different color
+        self.direction = [1, 1, 1]       # 1 = forward, -1 = backward
+        self.pulse_step = 0              # global pulse step
+
         self.animate_rainbow_fade()
 
-    def rgb_to_hex(self, rgb):
-        return "#%02x%02x%02x" % rgb
-
     def animate_rainbow_fade(self):
-        r1, g1, b1 = self.current_rgb
-        r2, g2, b2 = self.target_rgb
-        step_fraction = self.fade_step / 15
-        r = int(r1 + (r2 - r1) * step_fraction)
-        g = int(g1 + (g2 - g1) * step_fraction)
-        b = int(b1 + (b2 - b1) * step_fraction)
-        if hasattr(self, "credits_label"):
-            self.credits_label.config(foreground=self.rgb_to_hex((r, g, b)))
-        if self.fade_step < 15:
-            self.fade_step += 1
-        else:
-            self.fade_step = 0
-            self.current_rgb = self.target_rgb
-            rainbow_colors = [
-                (255, 0, 0), (255, 127, 0), (255, 255, 0),
-                (0, 255, 0), (0, 0, 255), (75, 0, 130), (148, 0, 211)
-            ]
-            self.color_index = (self.color_index + 1) % len(rainbow_colors)
-            self.target_rgb = rainbow_colors[self.color_index]
+        # Pulse brightness factor (oscillates 0.85 → 1.15)
+        brightness = 1 + 0.15 * math.sin(math.radians(self.pulse_step))
+        self.pulse_step = (self.pulse_step + 5) % 360  # smooth sine wave loop
+
+        for i, label in enumerate([self.credits_label1, self.credits_label2, self.credits_label3]):
+            step_fraction = self.fade_step[i] / 15
+
+            # Current & target based on direction
+            current_idx = self.color_index[i]
+            target_idx = current_idx + self.direction[i]
+
+            if target_idx >= len(self.rainbow_colors):
+                target_idx = len(self.rainbow_colors) - 2
+                self.direction[i] = -1
+            elif target_idx < 0:
+                target_idx = 1
+                self.direction[i] = 1
+
+            current = self.rainbow_colors[current_idx]
+            target = self.rainbow_colors[target_idx]
+
+            # Interpolate
+            r = int(current[0] + (target[0] - current[0]) * step_fraction)
+            g = int(current[1] + (target[1] - current[1]) * step_fraction)
+            b = int(current[2] + (target[2] - current[2]) * step_fraction)
+
+            # Apply glow (brightness scaling)
+            r = max(0, min(int(r * brightness), 255))
+            g = max(0, min(int(g * brightness), 255))
+            b = max(0, min(int(b * brightness), 255))
+
+            # Apply color to label
+            label.config(foreground=self.rgb_to_hex((r, g, b)))
+
+            # Update fade progress
+            if self.fade_step[i] < 15:
+                self.fade_step[i] += 1
+            else:
+                self.fade_step[i] = 0
+                self.color_index[i] += self.direction[i]
+
+        # Schedule next update
         self.root.after(50, self.animate_rainbow_fade)
 
+    def rgb_to_hex(self, rgb):
+        return f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
 
-# ----------------- Run App -----------------
+
 if __name__ == "__main__":
     root = TkinterDnD.Tk()
-    root.title("Mod Downloader and File Manager")
     root.geometry("700x500")
+    root.title("Mod Downloader")
     app = ModDownloader(root)
     root.mainloop()
