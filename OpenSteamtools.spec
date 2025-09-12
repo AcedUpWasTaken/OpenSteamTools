@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['OpenSteamtools - Copy.py'],
+    ['OpenSteamtools.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='OpenSteamtools - Copy',
+    name='OpenSteamtools',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
